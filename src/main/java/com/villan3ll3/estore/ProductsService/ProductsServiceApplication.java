@@ -1,13 +1,13 @@
-package com.villan3ll3.estore.ProductService;
+package com.villan3ll3.estore.ProductsService;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class ProductServiceApplication {
+public class ProductsServiceApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ProductServiceApplication.class, args);
+		SpringApplication.run(ProductsServiceApplication.class, args);
 	}
 
 }

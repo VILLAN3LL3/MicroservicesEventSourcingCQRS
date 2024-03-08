@@ -1,10 +1,10 @@
-package com.villan3ll3.estore.ProductService;
+package com.villan3ll3.estore.ProductsService;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class ProductServiceApplicationTests {
+class ProductsServiceApplicationTests {
 
 	@Test
 	void contextLoads() {
