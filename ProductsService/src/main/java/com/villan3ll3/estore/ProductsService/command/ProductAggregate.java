@@ -26,15 +26,6 @@ public class ProductAggregate {
 
     @CommandHandler
     public ProductAggregate(CreateProductCommand command) {
-        // Validate Create Product COmmand
-
-        if(command.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Price cannot be less or equal than zero");
-        }
-
-        if(StringUtils.isEmpty(command.getTitle())) {
-            throw new IllegalArgumentException("Title cannot be empty");
-        }
 
         ProductCreatedEvent event = new ProductCreatedEvent();
         BeanUtils.copyProperties(command, event);
