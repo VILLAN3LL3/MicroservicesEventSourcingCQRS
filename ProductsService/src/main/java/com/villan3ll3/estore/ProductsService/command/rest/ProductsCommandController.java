@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.villan3ll3.estore.ProductsService.command.CreateProductCommand;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -22,7 +23,7 @@ public class ProductsCommandController {
     private final CommandGateway commandGateway;
 
     @PostMapping
-    public String createProduct(@RequestBody CreateProductRestModel createProductRestModel) {
+    public String createProduct(@Valid @RequestBody CreateProductRestModel createProductRestModel) {
         
         CreateProductCommand command = CreateProductCommand
             .builder()
