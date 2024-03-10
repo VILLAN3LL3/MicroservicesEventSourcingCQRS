@@ -33,14 +33,7 @@ public class ProductsCommandController {
             .productId(UUID.randomUUID().toString())
             .build();
         
-        String returnValue;
-        try {
-            returnValue = commandGateway.sendAndWait(command);
-        } catch (Exception e) {
-            return e.getLocalizedMessage();
-        }
-        
-        return returnValue;
+        return commandGateway.sendAndWait(command);
     }
 
     @PutMapping
