@@ -9,8 +9,18 @@ Code-along with Udemy course "Event-Driven Microservices, CQRS, SAGA, Axon, Spri
 
 # URLs
 
+## General
+
 - Eureka: http://localhost:8761/
 - Axon: http://localhost:8024
 - API Gateway: http://localhost/8082
+
+## Products Service
+
 - H2 Console: http://localhost:8082/products-service/h2-console
-- Products Service: http://localhost:8082/products-service
+- REST Api: http://localhost:8082/products-service
+
+## Orders Service
+
+- H2 Console: http://localhost:8082/orders-service/h2-console
+- REST Api: http://localhost:8082/orders-service

@@ -1,12 +1,7 @@
 package com.villan3ll3.estore.ProductsService.command.interceptors;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.BiFunction;
-
-import javax.annotation.Nonnull;
-
-import org.apache.commons.lang.StringUtils;
 import org.axonframework.commandhandling.CommandMessage;
 import org.axonframework.messaging.MessageDispatchInterceptor;
 import org.slf4j.Logger;

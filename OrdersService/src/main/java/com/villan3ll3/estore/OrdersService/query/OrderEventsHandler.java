@@ -1,4 +1,4 @@
-package com.villan3ll3.estore.ProductsService.query;
+package com.villan3ll3.estore.OrdersService.query;
 
 import org.axonframework.config.ProcessingGroup;
 import org.axonframework.eventhandling.EventHandler;
@@ -6,18 +6,18 @@ import org.axonframework.messaging.interceptors.ExceptionHandler;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
-import com.villan3ll3.estore.ProductsService.core.data.ProductEntity;
-import com.villan3ll3.estore.ProductsService.core.data.ProductsRepository;
-import com.villan3ll3.estore.ProductsService.core.events.ProductCreatedEvent;
+import com.villan3ll3.estore.OrdersService.core.data.OrdersRepository;
+import com.villan3ll3.estore.OrdersService.core.events.OrderCreatedEvent;
+import com.villan3ll3.estore.OrdersService.core.model.OrderEntity;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-@ProcessingGroup("product-group")
-public class ProductEventsHandler {
+@ProcessingGroup("order-group")
+public class OrderEventsHandler {
 
-    private final ProductsRepository repository;
+    private final OrdersRepository repository;
 
     @ExceptionHandler(resultType = IllegalArgumentException.class)
     public void handle(IllegalStateException exception) {
@@ -30,9 +30,9 @@ public class ProductEventsHandler {
     }
 
     @EventHandler
-    public void on(ProductCreatedEvent event) {
+    public void on(OrderCreatedEvent event) {
         
-        ProductEntity entity = new ProductEntity();
+        OrderEntity entity = new OrderEntity();
         BeanUtils.copyProperties(event, entity);
 
         repository.save(entity);
