@@ -6,14 +6,17 @@ import org.axonframework.messaging.interceptors.ExceptionHandler;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
+import com.villan3ll3.estore.Core.events.ProductReservedEvent;
 import com.villan3ll3.estore.ProductsService.core.data.ProductEntity;
 import com.villan3ll3.estore.ProductsService.core.data.ProductsRepository;
 import com.villan3ll3.estore.ProductsService.core.events.ProductCreatedEvent;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 @ProcessingGroup("product-group")
 public class ProductEventsHandler {
 
@@ -36,5 +39,16 @@ public class ProductEventsHandler {
         BeanUtils.copyProperties(event, entity);
 
         repository.save(entity);
+    }
+
+    @EventHandler
+    public void on(ProductReservedEvent productReservedEvent) {
+
+        ProductEntity productEntity = repository.findByProductId(productReservedEvent.getProductId());
+        productEntity.setQuantity(productEntity.getQuantity() - productReservedEvent.getQuantity());
+        repository.save(productEntity);
+
+        log.info("ProductReservedEvent is calles for productId: {} and orderId: {}",
+        productReservedEvent.getProductId(), productReservedEvent.getOrderId());
     }
 }
