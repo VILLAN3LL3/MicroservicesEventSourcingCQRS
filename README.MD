@@ -4,7 +4,7 @@ Code-along with Udemy course "Event-Driven Microservices, CQRS, SAGA, Axon, Spri
 
 1. Axon Server
 2. Discovery Server (Eureka)
-3. Products Service
+3. Products Service, OrdersService, UsersService etc
 4. API Gateway
 
 # URLs
