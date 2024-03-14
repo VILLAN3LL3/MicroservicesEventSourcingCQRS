@@ -8,6 +8,7 @@ import org.axonframework.spring.stereotype.Aggregate;
 import org.springframework.beans.BeanUtils;
 
 import com.villan3ll3.estore.OrdersService.core.data.OrderStatus;
+import com.villan3ll3.estore.OrdersService.core.events.OrderApprovedEvent;
 import com.villan3ll3.estore.OrdersService.core.events.OrderCreatedEvent;
 
 import lombok.NoArgsConstructor;
@@ -41,4 +42,15 @@ public class OrderAggregate {
         this.orderStatus = event.getOrderStatus();
     }
 
+    @CommandHandler
+    public void handle(ApproveOrderCommand approveOrderCommand) {
+      
+      OrderApprovedEvent orderApprovedEvent = new OrderApprovedEvent(approveOrderCommand.getOrderId());
+      AggregateLifecycle.apply(orderApprovedEvent);
+    }
+
+    @EventSourcingHandler
+    protected void on(OrderApprovedEvent orderApprovedEvent) {
+      this.orderStatus = orderApprovedEvent.getOrderStatus();
+    }
 }

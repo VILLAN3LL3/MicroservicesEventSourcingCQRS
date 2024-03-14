@@ -7,6 +7,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
 import com.villan3ll3.estore.OrdersService.core.data.OrdersRepository;
+import com.villan3ll3.estore.OrdersService.core.events.OrderApprovedEvent;
 import com.villan3ll3.estore.OrdersService.core.events.OrderCreatedEvent;
 import com.villan3ll3.estore.OrdersService.core.model.OrderEntity;
 
@@ -36,5 +37,16 @@ public class OrderEventsHandler {
         BeanUtils.copyProperties(event, entity);
 
         repository.save(entity);
+    }
+
+    @EventHandler
+    public void on(OrderApprovedEvent orderApprovedEvent) {
+      OrderEntity orderEntity = repository.findByOrderId(orderApprovedEvent.getOrderId());
+      if(orderEntity == null) {
+        // todo
+        return;
+      }
+      orderEntity.setOrderStatus(orderApprovedEvent.getOrderStatus());
+      repository.save(orderEntity);
     }
 }

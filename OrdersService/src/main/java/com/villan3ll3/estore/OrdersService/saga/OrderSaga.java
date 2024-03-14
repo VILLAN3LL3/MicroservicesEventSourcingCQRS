@@ -10,6 +10,7 @@ import org.axonframework.commandhandling.CommandMessage;
 import org.axonframework.commandhandling.CommandResultMessage;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
+import org.axonframework.modelling.saga.EndSaga;
 import org.axonframework.modelling.saga.SagaEventHandler;
 import org.axonframework.modelling.saga.StartSaga;
 import org.axonframework.queryhandling.QueryGateway;
@@ -17,9 +18,12 @@ import org.axonframework.spring.stereotype.Saga;
 
 import com.villan3ll3.estore.Core.commands.ProcessPaymentCommand;
 import com.villan3ll3.estore.Core.commands.ReserveProductCommand;
+import com.villan3ll3.estore.Core.events.PaymentProcessedEvent;
 import com.villan3ll3.estore.Core.events.ProductReservedEvent;
 import com.villan3ll3.estore.Core.model.User;
 import com.villan3ll3.estore.Core.query.FetchUserPaymentDetailsQuery;
+import com.villan3ll3.estore.OrdersService.command.ApproveOrderCommand;
+import com.villan3ll3.estore.OrdersService.core.events.OrderApprovedEvent;
 import com.villan3ll3.estore.OrdersService.core.events.OrderCreatedEvent;
 
 import lombok.RequiredArgsConstructor;
@@ -117,5 +121,17 @@ public class OrderSaga {
         log.info("The ProcessPaymentCommand resulted in NULL. Initiating a compensating transaction");
         // start compensating transaction
       }
+  }
+
+  @SagaEventHandler(associationProperty = "orderId")
+  public void handle(PaymentProcessedEvent paymentProcessedEvent) {
+    ApproveOrderCommand approveOrderCommand = new ApproveOrderCommand(paymentProcessedEvent.getOrderId());
+    commandGateway.send(approveOrderCommand);
+  }
+
+  @EndSaga
+  @SagaEventHandler(associationProperty = "orderId")
+  public void handle(OrderApprovedEvent orderApprovedEvent) {
+    log.info("Order is approved. Order Saga is complete for orderId: {}", orderApprovedEvent.getOrderId());
   }
 }
