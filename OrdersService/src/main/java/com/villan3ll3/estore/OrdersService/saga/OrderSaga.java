@@ -1,19 +1,25 @@
 package com.villan3ll3.estore.OrdersService.saga;
 
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
 import javax.annotation.Nonnull;
 
 import org.axonframework.commandhandling.CommandCallback;
 import org.axonframework.commandhandling.CommandMessage;
 import org.axonframework.commandhandling.CommandResultMessage;
 import org.axonframework.commandhandling.gateway.CommandGateway;
+import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.modelling.saga.SagaEventHandler;
 import org.axonframework.modelling.saga.StartSaga;
+import org.axonframework.queryhandling.QueryGateway;
 import org.axonframework.spring.stereotype.Saga;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import com.villan3ll3.estore.Core.commands.ProcessPaymentCommand;
 import com.villan3ll3.estore.Core.commands.ReserveProductCommand;
 import com.villan3ll3.estore.Core.events.ProductReservedEvent;
+import com.villan3ll3.estore.Core.model.User;
+import com.villan3ll3.estore.Core.query.FetchUserPaymentDetailsQuery;
 import com.villan3ll3.estore.OrdersService.core.events.OrderCreatedEvent;
 
 import lombok.RequiredArgsConstructor;
@@ -24,45 +30,92 @@ import lombok.extern.slf4j.Slf4j;
 @Saga
 public class OrderSaga {
 
-    private final transient CommandGateway commandGateway;
+  private final transient CommandGateway commandGateway;
+  private final transient QueryGateway queryGateway;
 
-    @StartSaga
-    @SagaEventHandler(associationProperty = "orderId")
-    public void handle(OrderCreatedEvent event) {
+  @StartSaga
+  @SagaEventHandler(associationProperty = "orderId")
+  public void handle(OrderCreatedEvent event) {
 
-        ReserveProductCommand reserveProductCommand = ReserveProductCommand
-                .builder()
-                .orderId(event.getOrderId())
-                .productId(event.getProductId())
-                .quantity(event.getQuantity())
-                .userId(event.getUserId())
-                .build();
+    ReserveProductCommand reserveProductCommand = ReserveProductCommand
+        .builder()
+        .orderId(event.getOrderId())
+        .productId(event.getProductId())
+        .quantity(event.getQuantity())
+        .userId(event.getUserId())
+        .build();
 
-        log.info(
-            "OrderCreatedEvent handled for orderId: {} and productId: {}",
-            reserveProductCommand.getOrderId(),
-            reserveProductCommand.getProductId());
+    log.info(
+        "OrderCreatedEvent handled for orderId: {} and productId: {}",
+        reserveProductCommand.getOrderId(),
+        reserveProductCommand.getProductId());
 
-        commandGateway.send(reserveProductCommand, new CommandCallback<ReserveProductCommand, Object>() {
+    commandGateway.send(reserveProductCommand, new CommandCallback<ReserveProductCommand, Object>() {
 
-            @Override
-            public void onResult(@Nonnull CommandMessage<? extends ReserveProductCommand> commandMessage,
-                    @Nonnull CommandResultMessage<? extends Object> commandResultMessage) {
+      @Override
+      public void onResult(@Nonnull CommandMessage<? extends ReserveProductCommand> commandMessage,
+          @Nonnull CommandResultMessage<? extends Object> commandResultMessage) {
 
-                if (commandResultMessage.isExceptional()) {
-                    // Start a compensating transaction
-                }
-            }
-        });
-    }
+        if (commandResultMessage.isExceptional()) {
+          // Start a compensating transaction
+        }
+      }
+    });
+  }
 
-    @SagaEventHandler(associationProperty = "orderId")
-    public void handle(ProductReservedEvent productReservedEvent) {
+  /**
+   * @param productReservedEvent
+   */
+  @SagaEventHandler(associationProperty = "orderId")
+  public void handle(ProductReservedEvent productReservedEvent) {
 
-        // Process user payment
-        log.info(
-            "ProductReservedEvent is called for productId: {} and orderId: {}", 
-            productReservedEvent.getProductId() +
+    // Process user payment
+    log.info(
+        "ProductReservedEvent is called for productId: {} and orderId: {}",
+        productReservedEvent.getProductId() +
             productReservedEvent.getOrderId());
+
+    FetchUserPaymentDetailsQuery fetchUserPaymentDetailsQuery = new FetchUserPaymentDetailsQuery(
+        productReservedEvent.getUserId());
+
+    User userPaymentDetails = null;
+
+    try {
+      userPaymentDetails = queryGateway
+          .query(fetchUserPaymentDetailsQuery, ResponseTypes.instanceOf(User.class))
+          .join();
+    } catch (Exception e) {
+      log.error(e.getMessage());
+      // start compensating transaction
+      return;
     }
+
+    if (userPaymentDetails == null) {
+      // start compensating transaction
+      return;
+    }
+
+    log.info("Successfully fetched user payment details for user {}", userPaymentDetails.getFirstName());
+  
+    ProcessPaymentCommand processPaymentCommand = ProcessPaymentCommand
+      .builder()
+      .orderId(productReservedEvent.getOrderId())
+      .paymentDetails(userPaymentDetails.getPaymentDetails())
+      .paymentId(UUID.randomUUID().toString())
+      .build();
+
+      String result = null;
+
+      try {
+        result = commandGateway.sendAndWait(processPaymentCommand, 10, TimeUnit.SECONDS);
+      } catch (Exception e) {
+        log.error(e.getMessage());
+        // start compensating transaction
+      }
+
+      if(result == null) {
+        log.info("The ProcessPaymentCommand resulted in NULL. Initiating a compensating transaction");
+        // start compensating transaction
+      }
+  }
 }
