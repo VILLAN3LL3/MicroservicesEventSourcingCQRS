@@ -6,6 +6,7 @@ import org.axonframework.messaging.interceptors.ExceptionHandler;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
+import com.villan3ll3.estore.Core.events.ProductReservationCancelledEvent;
 import com.villan3ll3.estore.Core.events.ProductReservedEvent;
 import com.villan3ll3.estore.ProductsService.core.data.ProductEntity;
 import com.villan3ll3.estore.ProductsService.core.data.ProductsRepository;
@@ -50,5 +51,14 @@ public class ProductEventsHandler {
 
         log.info("ProductReservedEvent is calles for productId: {} and orderId: {}",
         productReservedEvent.getProductId(), productReservedEvent.getOrderId());
+    }
+
+    @EventHandler
+    public void on(ProductReservationCancelledEvent productReservationCancelledEvent) {
+
+      ProductEntity productEntity = repository.findByProductId(productReservationCancelledEvent.getProductId());
+      int newQuantity = productEntity.getQuantity() + productReservationCancelledEvent.getQuantity();
+      productEntity.setQuantity(newQuantity);
+      repository.save(productEntity);
     }
 }
