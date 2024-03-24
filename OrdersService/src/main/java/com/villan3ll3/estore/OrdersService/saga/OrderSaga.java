@@ -3,7 +3,6 @@ package com.villan3ll3.estore.OrdersService.saga;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 
@@ -18,6 +17,7 @@ import org.axonframework.modelling.saga.EndSaga;
 import org.axonframework.modelling.saga.SagaEventHandler;
 import org.axonframework.modelling.saga.StartSaga;
 import org.axonframework.queryhandling.QueryGateway;
+import org.axonframework.queryhandling.QueryUpdateEmitter;
 import org.axonframework.spring.stereotype.Saga;
 
 import com.villan3ll3.estore.Core.commands.CancelProductReservationCommand;
@@ -30,9 +30,11 @@ import com.villan3ll3.estore.Core.model.User;
 import com.villan3ll3.estore.Core.query.FetchUserPaymentDetailsQuery;
 import com.villan3ll3.estore.OrdersService.command.ApproveOrderCommand;
 import com.villan3ll3.estore.OrdersService.command.RejectOrderCommand;
+import com.villan3ll3.estore.OrdersService.core.data.OrderSummary;
 import com.villan3ll3.estore.OrdersService.core.events.OrderApprovedEvent;
 import com.villan3ll3.estore.OrdersService.core.events.OrderCreatedEvent;
 import com.villan3ll3.estore.OrdersService.core.events.OrderRejectedEvent;
+import com.villan3ll3.estore.OrdersService.query.FindOrderQuery;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +47,7 @@ public class OrderSaga {
   private final transient CommandGateway commandGateway;
   private final transient QueryGateway queryGateway;
   private final transient DeadlineManager deadlineManager;
+  private final transient QueryUpdateEmitter queryUpdateEmitter;
 
   private final String PAYMENT_PROCESSING_TIMEOUT_DEADLINE = "payment-processing-deadline";
   private String scheduleId;
@@ -152,7 +155,13 @@ public class OrderSaga {
   @EndSaga
   @SagaEventHandler(associationProperty = "orderId")
   public void handle(OrderApprovedEvent orderApprovedEvent) {
+    
     log.info("Order is approved. Order Saga is complete for orderId: {}", orderApprovedEvent.getOrderId());
+    
+    queryUpdateEmitter.emit(
+      FindOrderQuery.class, 
+      query -> true, 
+      new OrderSummary(orderApprovedEvent.getOrderId(), orderApprovedEvent.getOrderStatus(), ""));
   }
 
   @SagaEventHandler(associationProperty = "orderId")
@@ -166,7 +175,13 @@ public class OrderSaga {
   @EndSaga
   @SagaEventHandler(associationProperty = "orderId")
   public void handle(OrderRejectedEvent orderRejectedEvent) {
+
     log.info("Successfully rejected order with id {}", orderRejectedEvent.getOrderId());
+
+    queryUpdateEmitter.emit(
+      FindOrderQuery.class, 
+      query -> true, 
+      new OrderSummary(orderRejectedEvent.getOrderId(), orderRejectedEvent.getOrderStatus(), orderRejectedEvent.getReason()));
   }
 
   @DeadlineHandler(deadlineName = PAYMENT_PROCESSING_TIMEOUT_DEADLINE)
