@@ -40,6 +40,6 @@ public class ProductsServiceApplication {
 
   @Bean(name = "producSnapshotTriggerDefinition")
   public SnapshotTriggerDefinition producSnapshotTriggerDefinition(Snapshotter snapshotter) {
-    return new EventCountSnapshotTriggerDefinition(snapshotter, 3);
+    return new EventCountSnapshotTriggerDefinition(snapshotter, 3); // important: the snapshot event itself counts as 1 event!
   }
 }
