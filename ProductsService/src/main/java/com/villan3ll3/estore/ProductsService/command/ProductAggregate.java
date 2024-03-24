@@ -18,7 +18,7 @@ import com.villan3ll3.estore.ProductsService.core.events.ProductCreatedEvent;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
-@Aggregate
+@Aggregate(snapshotTriggerDefinition = "producSnapshotTriggerDefinition")
 public class ProductAggregate {
 
   @AggregateIdentifier
