@@ -2,6 +2,7 @@ package com.villan3ll3.estore.ProductsService.query;
 
 import org.axonframework.config.ProcessingGroup;
 import org.axonframework.eventhandling.EventHandler;
+import org.axonframework.eventhandling.ResetHandler;
 import org.axonframework.messaging.interceptors.ExceptionHandler;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
@@ -60,5 +61,11 @@ public class ProductEventsHandler {
       int newQuantity = productEntity.getQuantity() + productReservationCancelledEvent.getQuantity();
       productEntity.setQuantity(newQuantity);
       repository.save(productEntity);
+    }
+
+    @ResetHandler
+    public void reset() {
+
+      repository.deleteAll();
     }
 }
