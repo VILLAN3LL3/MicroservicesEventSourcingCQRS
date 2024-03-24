@@ -25,10 +25,13 @@ import com.villan3ll3.estore.Core.events.ProductReservedEvent;
 import com.villan3ll3.estore.Core.model.User;
 import com.villan3ll3.estore.Core.query.FetchUserPaymentDetailsQuery;
 import com.villan3ll3.estore.OrdersService.command.ApproveOrderCommand;
+import com.villan3ll3.estore.OrdersService.command.RejectOrderCommand;
 import com.villan3ll3.estore.OrdersService.core.events.OrderApprovedEvent;
 import com.villan3ll3.estore.OrdersService.core.events.OrderCreatedEvent;
+import com.villan3ll3.estore.OrdersService.core.events.OrderRejectedEvent;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
@@ -102,27 +105,27 @@ public class OrderSaga {
     }
 
     log.info("Successfully fetched user payment details for user {}", userPaymentDetails.getFirstName());
-  
+
     ProcessPaymentCommand processPaymentCommand = ProcessPaymentCommand
-      .builder()
-      .orderId(productReservedEvent.getOrderId())
-      .paymentDetails(userPaymentDetails.getPaymentDetails())
-      .paymentId(UUID.randomUUID().toString())
-      .build();
+        .builder()
+        .orderId(productReservedEvent.getOrderId())
+        .paymentDetails(userPaymentDetails.getPaymentDetails())
+        .paymentId(UUID.randomUUID().toString())
+        .build();
 
-      String result = null;
+    String result = null;
 
-      try {
-        result = commandGateway.sendAndWait(processPaymentCommand, 10, TimeUnit.SECONDS);
-      } catch (Exception e) {
-        log.error(e.getMessage());
-        cancelProductReservation(productReservedEvent, e.getMessage());
-      }
+    try {
+      result = commandGateway.sendAndWait(processPaymentCommand, 10, TimeUnit.SECONDS);
+    } catch (Exception e) {
+      log.error(e.getMessage());
+      cancelProductReservation(productReservedEvent, e.getMessage());
+    }
 
-      if(result == null) {
-        log.info("The ProcessPaymentCommand resulted in NULL. Initiating a compensating transaction");
-        cancelProductReservation(productReservedEvent, "Could not process user payment with provided payment details");
-      }
+    if (result == null) {
+      log.info("The ProcessPaymentCommand resulted in NULL. Initiating a compensating transaction");
+      cancelProductReservation(productReservedEvent, "Could not process user payment with provided payment details");
+    }
   }
 
   @SagaEventHandler(associationProperty = "orderId")
@@ -139,18 +142,27 @@ public class OrderSaga {
 
   @SagaEventHandler(associationProperty = "orderId")
   public void handle(ProductReservationCancelledEvent productReservationCancelledEvent) {
-    // Create and send a RejectOrderCommand
+    RejectOrderCommand rejectOrderCommand = new RejectOrderCommand(
+        productReservationCancelledEvent.getOrderId(),
+        productReservationCancelledEvent.getReason());
+    commandGateway.send(rejectOrderCommand);
+  }
+
+  @EndSaga
+  @SagaEventHandler(associationProperty = "orderId")
+  public void handle(OrderRejectedEvent orderRejectedEvent) {
+    log.info("Successfully rejected order with id {}", orderRejectedEvent.getOrderId());
   }
 
   private void cancelProductReservation(ProductReservedEvent productReservedEvent, String reason) {
     CancelProductReservationCommand cancelProductReservationCommand = CancelProductReservationCommand
-      .builder()
-      .orderId(productReservedEvent.getOrderId())
-      .productId(productReservedEvent.getProductId())
-      .quantity(productReservedEvent.getQuantity())
-      .userId(productReservedEvent.getUserId())
-      .reason(reason)
-      .build();
-      commandGateway.send(cancelProductReservationCommand);
+        .builder()
+        .orderId(productReservedEvent.getOrderId())
+        .productId(productReservedEvent.getProductId())
+        .quantity(productReservedEvent.getQuantity())
+        .userId(productReservedEvent.getUserId())
+        .reason(reason)
+        .build();
+    commandGateway.send(cancelProductReservationCommand);
   }
 }

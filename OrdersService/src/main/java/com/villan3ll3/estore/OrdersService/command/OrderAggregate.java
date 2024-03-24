@@ -10,6 +10,7 @@ import org.springframework.beans.BeanUtils;
 import com.villan3ll3.estore.OrdersService.core.data.OrderStatus;
 import com.villan3ll3.estore.OrdersService.core.events.OrderApprovedEvent;
 import com.villan3ll3.estore.OrdersService.core.events.OrderCreatedEvent;
+import com.villan3ll3.estore.OrdersService.core.events.OrderRejectedEvent;
 
 import lombok.NoArgsConstructor;
 
@@ -52,5 +53,18 @@ public class OrderAggregate {
     @EventSourcingHandler
     protected void on(OrderApprovedEvent orderApprovedEvent) {
       this.orderStatus = orderApprovedEvent.getOrderStatus();
+    }
+
+    @CommandHandler
+    public void handle(RejectOrderCommand rejectOrderCommand) {
+      OrderRejectedEvent orderRejectedEvent = new OrderRejectedEvent(
+        rejectOrderCommand.getOrderId(), 
+        rejectOrderCommand.getReason());
+        AggregateLifecycle.apply(orderRejectedEvent);
+    }
+
+    @EventSourcingHandler
+    public void on(OrderRejectedEvent orderRejectedEvent) {
+      this.orderStatus = orderRejectedEvent.getOrderStatus();
     }
 }

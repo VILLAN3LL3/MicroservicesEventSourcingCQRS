@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import com.villan3ll3.estore.OrdersService.core.data.OrdersRepository;
 import com.villan3ll3.estore.OrdersService.core.events.OrderApprovedEvent;
 import com.villan3ll3.estore.OrdersService.core.events.OrderCreatedEvent;
+import com.villan3ll3.estore.OrdersService.core.events.OrderRejectedEvent;
 import com.villan3ll3.estore.OrdersService.core.model.OrderEntity;
 
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,13 @@ public class OrderEventsHandler {
         return;
       }
       orderEntity.setOrderStatus(orderApprovedEvent.getOrderStatus());
+      repository.save(orderEntity);
+    }
+
+    @EventHandler
+    public void on(OrderRejectedEvent orderRejectedEvent) {
+      OrderEntity orderEntity = repository.findByOrderId(orderRejectedEvent.getOrderId());
+      orderEntity.setOrderStatus(orderRejectedEvent.getOrderStatus());
       repository.save(orderEntity);
     }
 }
